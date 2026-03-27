@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>കുഞ്ഞിക്കഥ</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body class="home-page">
+    <div class="floating-elements" aria-hidden="true">
+        <div class="floating-star">⭐</div>
+        <div class="floating-heart">💛</div>
+        <div class="floating-book">📚</div>
+        <div class="floating-sparkle">✨</div>
+        <div class="floating-animal">🐘</div>
+        <div class="floating-flower">🌼</div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <span class="header-badge">🌈 Story time in Malayalam</span>
+                <h1 class="title bounce-in">കുഞ്ഞിക്കഥ</h1>
+                <p class="subtitle fade-in-delay">
+                    Create short Malayalam adventures with friendly characters, gentle lessons, and big easy-to-read story cards.
+                </p>
+                <div class="header-notes">
+                    <span class="header-note">📖 Large readable text</span>
+                    <span class="header-note">🎯 Simple choices for kids</span>
+                    <span class="header-note">💡 Soft moral lessons</span>
+                </div>
+                <div class="magic-wand">🪄</div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% if error %}
+            <div class="alert alert-error">
+                <strong>⚠️ Story pause.</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <section class="intro-grid">
+                <div class="form-container slide-up">
+                    <div class="section-heading">
+                        <p class="section-kicker">Create a new story</p>
+                        <h2 class="form-title">Build a story in 3 easy steps</h2>
+                        <p class="section-copy">
+                            Pick a character, choose a place, and select a theme. We will turn it into a bright little adventure.
+                        </p>
+                    </div>
+
+                    <div class="story-steps" aria-hidden="true">
+                        <span class="step-chip" data-step="character">1 Pick a hero</span>
+                        <span class="step-chip" data-step="place">2 Choose a place</span>
+                        <span class="step-chip" data-step="theme">3 Choose a theme</span>
+                    </div>
+
+                    <form method="POST" class="story-form" id="storyForm">
+                        {% csrf_token %}
+
+                        <div class="form-group">
+                            <label for="id_character" class="form-label">
+                                🐾 Character name in Malayalam
+                            </label>
+                            {{ form.character }}
+                            <div class="suggestions">
+                                <small>Try names like: കാക്ക, കുറുങ്ങൻ, തുമ്പി, മുയൽ</small>
+                            </div>
+                            <div class="input-sparkle">✨</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_place" class="form-label">
+                                🌳 Place name in Malayalam
+                            </label>
+                            {{ form.place }}
+                            <div class="suggestions">
+                                <small>Try places like: വനം, നദി, പാടി, കടൽ</small>
+                            </div>
+                            <div class="input-sparkle">🌟</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="id_theme" class="form-label">
+                                🎈 Story theme
+                            </label>
+                            {{ form.theme }}
+                            <div class="input-sparkle">🎨</div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large" id="createBtn">
+                                <span class="btn-label">Create My Story</span>
+                                <span class="btn-icon">✨</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <aside class="tip-card preview-panel slide-up-delay">
+                    <p class="section-kicker">Live preview</p>
+                    <h2 class="panel-title">Watch the story wake up</h2>
+                    <p class="section-copy">
+                        As you type, this little story card updates right away so children can feel the adventure beginning.
+                    </p>
+
+                    <div class="story-preview-card" aria-live="polite">
+                        <div class="preview-sticker">New tale</div>
+                        <p class="preview-label">Tonight's story</p>
+                        <h3 class="preview-title" id="previewCharacter">Your hero appears here</h3>
+                        <p class="preview-setting" id="previewPlace">Choose a place to begin the adventure.</p>
+                        <div class="preview-theme-pill" id="previewTheme">Pick a fun theme</div>
+                        <div class="preview-stars" aria-hidden="true">
+                            <span>✨</span>
+                            <span>🌟</span>
+                            <span>📖</span>
+                        </div>
+                    </div>
+
+                    <div class="form-progress">
+                        <div class="progress-track">
+                            <div class="progress-fill" id="previewProgress"></div>
+                        </div>
+                        <p class="progress-copy" id="previewProgressText">Fill all 3 steps to unlock your story magic.</p>
+                    </div>
+
+                    <ul class="tip-list">
+                        <li><span>1</span> Use one short character name children can repeat easily.</li>
+                        <li><span>2</span> Pick a place they already know, like a forest, river, or home.</li>
+                        <li><span>3</span> Choose themes like kindness, fun, or friendship for gentle reading.</li>
+                    </ul>
+
+                    <a href="{% url 'all_stories' %}" class="btn btn-secondary">Browse Saved Stories</a>
+                </aside>
+            </section>
+
+            <section class="features slide-up-delay">
+                <div class="section-heading">
+                    <p class="section-kicker">Why it feels good to read</p>
+                    <h2 class="section-title">Playful, calm, and easy to follow</h2>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon bounce">🧒</div>
+                        <h3>Kid-first design</h3>
+                        <p>Large headings, roomy spacing, and gentle color contrast make reading feel comfortable.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon bounce">🌟</div>
+                        <h3>Simple choices</h3>
+                        <p>Big choice cards help children focus on what happens next without feeling crowded.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon bounce">📚</div>
+                        <h3>Short story parts</h3>
+                        <p>Each part stays small enough to read aloud together and enjoy in one sitting.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon bounce">💛</div>
+                        <h3>Warm lessons</h3>
+                        <p>Every story can end with a gentle idea children can remember after reading.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Made for bright, happy Malayalam story time.</p>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>കുഞ്ഞിക്കഥ</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body class="story-page">
+    <div class="floating-elements" aria-hidden="true">
+        <div class="floating-star">⭐</div>
+        <div class="floating-heart">💛</div>
+        <div class="floating-book">📚</div>
+        <div class="floating-sparkle">✨</div>
+        <div class="floating-animal">🐇</div>
+        <div class="floating-flower">🌼</div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <span class="header-badge">📖 Read and continue</span>
+                <h1 class="title bounce-in">കുഞ്ഞിക്കഥ</h1>
+                <p class="subtitle fade-in-delay">
+                    Large text, open spacing, and clear choices help children follow the story one gentle step at a time.
+                </p>
+                <div class="header-notes">
+                    <span class="header-note">🌟 Easy to read aloud</span>
+                    <span class="header-note">🎯 Big choice cards</span>
+                    <span class="header-note">💡 Gentle lesson included</span>
+                </div>
+                <div class="magic-wand">🪄</div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="story-info-bar slide-up">
+                <span class="info-badge"><span class="info-label">Character</span><strong>{{ session.character }}</strong></span>
+                <span class="info-badge"><span class="info-label">Place</span><strong>{{ session.place }}</strong></span>
+                <span class="info-badge"><span class="info-label">Theme</span><strong>{{ session.theme|title }}</strong></span>
+                <span class="info-badge"><span class="info-label">Story parts</span><strong>{{ session.story_history|length }}</strong></span>
+            </div>
+
+            <section class="story-container slide-up-delay">
+                <div class="section-heading">
+                    <p class="section-kicker">Story time</p>
+                    <h2 class="section-title">Read this part together</h2>
+                    <p class="section-copy">Take it slowly and let the child imagine each line before choosing what comes next.</p>
+                </div>
+
+                <div class="story-content" id="storyContent">
+                    <p class="story-text">{{ story }}</p>
+                </div>
+
+                <div class="story-spark-row" aria-hidden="true">
+                    <span>✨</span>
+                    <span>📖</span>
+                    <span>🌈</span>
+                </div>
+
+                {% if moral %}
+                <div class="moral-section" id="moralSection">
+                    <h3 class="moral-title">💡 Gentle lesson</h3>
+                    <p class="moral-text">{{ moral }}</p>
+                </div>
+                {% endif %}
+            </section>
+
+            <section class="choices-container slide-up-delay">
+                <div class="section-heading">
+                    <p class="section-kicker">Choose the next step</p>
+                    <h2 class="choices-title">What happens next?</h2>
+                    <p class="section-copy">Tap one big card to continue the adventure.</p>
+                </div>
+
+                <div class="choices-grid" id="choicesGrid">
+                    <button type="button" class="choice-btn btn-choice-1" data-choice="{{ choice1|escape }}">
+                        <span class="choice-marker">🌟</span>
+                        <span class="choice-content">
+                            <span class="choice-label">Choice one</span>
+                            <span class="choice-text">{{ choice1 }}</span>
+                            <span class="choice-action">Tap to continue →</span>
+                        </span>
+                    </button>
+
+                    <button type="button" class="choice-btn btn-choice-2" data-choice="{{ choice2|escape }}">
+                        <span class="choice-marker">🚀</span>
+                        <span class="choice-content">
+                            <span class="choice-label">Choice two</span>
+                            <span class="choice-text">{{ choice2 }}</span>
+                            <span class="choice-action">Tap to continue →</span>
+                        </span>
+                    </button>
+                </div>
+            </section>
+
+            <div class="loading-indicator" id="loadingIndicator" aria-live="polite">
+                <div class="spinner"></div>
+                <p id="loadingMessage">Creating the next part of the story...</p>
+            </div>
+
+            <div class="action-buttons">
+                <a href="{% url 'new_story' %}" class="btn btn-secondary">🔄 New Story</a>
+                <a href="{% url 'all_stories' %}" class="btn btn-secondary">📚 View All Stories</a>
+            </div>
+
+            <p class="visually-hidden" id="storyStatus" aria-live="polite"></p>
+        </main>
+
+        <footer class="footer">
+            <p>Keep reading, choosing, and imagining.</p>
+        </footer>
+    </div>
+
+    <script>
+        const sessionId = '{{ session_id }}';
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const storyContent = document.getElementById('storyContent');
+        const choicesGrid = document.getElementById('choicesGrid');
+        const storyStatus = document.getElementById('storyStatus');
+        const loadingMessages = [
+            'Creating the next part of the story...',
+            'Sprinkling in a little more adventure...',
+            'Picking a fun next scene...',
+            'Warming up the next choice...'
+        ];
+        let loadingMessageTimer = null;
+
+        attachChoiceHandlers();
+
+        function attachChoiceHandlers() {
+            document.querySelectorAll('.choice-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    selectChoice(button.dataset.choice || '');
+                });
+            });
+        }
+
+        function createChoiceButton(choiceText, variantClass, label, marker) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `choice-btn ${variantClass}`;
+            button.dataset.choice = choiceText;
+            button.disabled = !choiceText || !choiceText.trim();
+
+            const markerNode = document.createElement('span');
+            markerNode.className = 'choice-marker';
+            markerNode.textContent = marker;
+
+            const content = document.createElement('span');
+            content.className = 'choice-content';
+
+            const labelNode = document.createElement('span');
+            labelNode.className = 'choice-label';
+            labelNode.textContent = label;
+
+            const textNode = document.createElement('span');
+            textNode.className = 'choice-text';
+            textNode.textContent = choiceText && choiceText.trim() ? choiceText : 'More story choices will appear soon.';
+
+            const actionNode = document.createElement('span');
+            actionNode.className = 'choice-action';
+            actionNode.textContent = 'Tap to continue →';
+
+            content.append(labelNode, textNode, actionNode);
+            button.append(markerNode, content);
+            button.addEventListener('click', () => selectChoice(choiceText));
+
+            return button;
+        }
+
+        function renderChoices(choice1, choice2) {
+            choicesGrid.replaceChildren(
+                createChoiceButton(choice1, 'btn-choice-1', 'Choice one', '🌟'),
+                createChoiceButton(choice2, 'btn-choice-2', 'Choice two', '🚀')
+            );
+        }
+
+        function renderStory(storyText) {
+            storyContent.style.opacity = '0';
+
+            window.setTimeout(() => {
+                const storyParagraph = document.createElement('p');
+                storyParagraph.className = 'story-text';
+                storyParagraph.textContent = storyText;
+                storyContent.replaceChildren(storyParagraph);
+                storyContent.style.opacity = '1';
+            }, 180);
+        }
+
+        function renderMoral(moralText) {
+            let moralSection = document.getElementById('moralSection');
+
+            if (!moralText || !moralText.trim()) {
+                if (moralSection) {
+                    moralSection.remove();
+                }
+                return;
+            }
+
+            if (!moralSection) {
+                moralSection = document.createElement('div');
+                moralSection.className = 'moral-section';
+                moralSection.id = 'moralSection';
+
+                const title = document.createElement('h3');
+                title.className = 'moral-title';
+                title.textContent = '💡 Gentle lesson';
+
+                const text = document.createElement('p');
+                text.className = 'moral-text';
+
+                moralSection.append(title, text);
+                document.querySelector('.story-container').appendChild(moralSection);
+            }
+
+            moralSection.querySelector('.moral-text').textContent = moralText;
+        }
+
+        function setLoading(isLoading) {
+            loadingIndicator.classList.toggle('visible', isLoading);
+
+            if (!loadingMessage) {
+                return;
+            }
+
+            if (loadingMessageTimer) {
+                window.clearInterval(loadingMessageTimer);
+                loadingMessageTimer = null;
+            }
+
+            if (isLoading) {
+                let messageIndex = 0;
+                loadingMessage.textContent = loadingMessages[messageIndex];
+                loadingMessageTimer = window.setInterval(() => {
+                    messageIndex = (messageIndex + 1) % loadingMessages.length;
+                    loadingMessage.textContent = loadingMessages[messageIndex];
+                }, 1400);
+                return;
+            }
+
+            loadingMessage.textContent = loadingMessages[0];
+        }
+
+        function showErrorAnimation(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'floating-error';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+
+            window.setTimeout(() => errorDiv.remove(), 3200);
+        }
+
+        function selectChoice(choice) {
+            if (!choice || !choice.trim()) {
+                showErrorAnimation('Please pick a story choice.');
+                return;
+            }
+
+            if (typeof confetti !== 'undefined') {
+                confetti({
+                    particleCount: 36,
+                    spread: 44,
+                    origin: { y: 0.72 },
+                    colors: ['#ff7b5b', '#f5c24e', '#1eb6a5', '#6ab7ff']
+                });
+            }
+
+            setLoading(true);
+            storyStatus.textContent = 'Creating the next part of the story.';
+
+            fetch(`/api/story/${sessionId}/continue/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ choice: choice })
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                setLoading(false);
+
+                if (!data.success) {
+                    showErrorAnimation(data.error || 'Could not generate the next story part.');
+                    storyStatus.textContent = 'There was a problem creating the next part of the story.';
+                    return;
+                }
+
+                renderStory(data.story || '');
+                renderMoral(data.moral || '');
+                renderChoices(data.choice1 || '', data.choice2 || '');
+                storyStatus.textContent = 'A new part of the story is ready.';
+
+                if (typeof confetti !== 'undefined') {
+                    confetti({
+                        particleCount: 56,
+                        spread: 60,
+                        origin: { y: 0.35 },
+                        colors: ['#ff7b5b', '#f5c24e', '#1eb6a5', '#6ab7ff']
+                    });
+                }
+
+                document.querySelector('.story-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .catch(() => {
+                setLoading(false);
+                showErrorAnimation('Network error. Please try again.');
+                storyStatus.textContent = 'There was a network problem.';
+            });
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i += 1) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === `${name}=`) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>കുഞ്ഞിക്കഥ</title>
+    {% load static %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body class="stories-page">
+    <div class="floating-elements" aria-hidden="true">
+        <div class="floating-star">⭐</div>
+        <div class="floating-heart">💛</div>
+        <div class="floating-book">📚</div>
+        <div class="floating-sparkle">✨</div>
+        <div class="floating-animal">🦋</div>
+        <div class="floating-flower">🌼</div>
+    </div>
+
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <span class="header-badge">📚 Saved adventures</span>
+                <h1 class="title bounce-in">കുഞ്ഞിക്കഥ</h1>
+                <p class="subtitle fade-in-delay">
+                    Open any saved story, read it again, and keep the adventure going from the last choice.
+                </p>
+                <div class="header-notes">
+                    <span class="header-note">🧭 Easy to browse</span>
+                    <span class="header-note">📖 Resume anytime</span>
+                    <span class="header-note">🌈 Clean reading cards</span>
+                </div>
+                <div class="magic-wand">📖</div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="nav-buttons slide-up">
+                <a href="{% url 'home' %}" class="btn btn-secondary">🏠 Home</a>
+                <a href="{% url 'new_story' %}" class="btn btn-primary">✨ Create New Story</a>
+            </div>
+
+            {% if stories %}
+            <section class="page-summary slide-up">
+                <p class="section-kicker">Story shelf</p>
+                <h2 class="section-title">Pick a saved story to continue</h2>
+                <p class="section-copy">
+                    Every card shows the character, place, and theme so children can quickly choose the story they want.
+                </p>
+            </section>
+
+            <div class="stories-grid slide-up-delay">
+                {% for story in stories %}
+                <article class="story-card story-card--{{ story.theme|slugify }}">
+                    <div class="story-card-ribbon">Story {{ forloop.counter }}</div>
+                    <div class="story-card-header">
+                        <h3 class="story-card-title">{{ story.character }}</h3>
+                        <span class="story-card-date">{{ story.created_at|date:"M d, Y" }}</span>
+                    </div>
+
+                    <div class="story-card-content">
+                        <div class="story-card-meta">
+                            <span class="story-tag">📍 {{ story.place }}</span>
+                            <span class="story-tag">🎈 {{ story.theme|title }}</span>
+                        </div>
+                        <p class="story-card-text">{{ story.story_text|truncatechars:150 }}</p>
+                    </div>
+
+                    <div class="story-card-footer">
+                        <a href="{% url 'story_detail' story.session_id %}" class="btn btn-secondary btn-small">Continue Story</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state slide-up-delay">
+                <div class="empty-icon">📚</div>
+                <h2>No stories yet</h2>
+                <p>Start with one simple character and one cozy place, then your first Malayalam adventure will be ready to read.</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">Create Your First Story</a>
+            </div>
+            {% endif %}
+        </main>
+
+        <footer class="footer">
+            <p>A calm little library for story time.</p>
+        </footer>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
